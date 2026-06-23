@@ -1,0 +1,29 @@
+[
+  {
+    "id": "1782155169527-5lhvow",
+    "postSlug": "hello-world",
+    "parentId": "1782154997577-c1kmwy",
+    "author": "Jake",
+    "content": "What's up?",
+    "date": "2026-06-22",
+    "isAdmin": false
+  },
+  {
+    "id": "1782155177824-3vgxxh",
+    "postSlug": "hello-world",
+    "parentId": "1782155169527-5lhvow",
+    "author": "John",
+    "content": "Heyy!",
+    "date": "2026-06-22",
+    "isAdmin": false
+  },
+  {
+    "id": "1782155348514-b5uk7r",
+    "postSlug": "hello-world",
+    "parentId": "1782154997577-c1kmwy",
+    "author": "Josh",
+    "content": "How are you?",
+    "date": "2026-06-22",
+    "isAdmin": false
+  }
+]

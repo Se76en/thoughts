@@ -1,0 +1,245 @@
+"use client";
+
+import React from "react";
+import { motion, useScroll, useTransform } from "motion/react";
+import { PenLine } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const AetherFlowHero = () => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const { scrollY } = useScroll();
+  const canvasOpacity = useTransform(scrollY, [0, 800], [1, 0]);
+  const canvasScale = useTransform(scrollY, [0, 800], [1, 1.15]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let particles: Particle[] = [];
+    const mouse = { x: null as number | null, y: null as number | null, radius: 200 };
+
+    class Particle {
+      x: number;
+      y: number;
+      directionX: number;
+      directionY: number;
+      size: number;
+      color: string;
+
+      constructor(x: number, y: number, directionX: number, directionY: number, size: number, color: string) {
+        this.x = x;
+        this.y = y;
+        this.directionX = directionX;
+        this.directionY = directionY;
+        this.size = size;
+        this.color = color;
+      }
+
+      draw() {
+        ctx!.beginPath();
+        ctx!.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        ctx!.fillStyle = this.color;
+        ctx!.fill();
+      }
+
+      update() {
+        if (this.x > canvas!.width || this.x < 0) {
+          this.directionX = -this.directionX;
+        }
+        if (this.y > canvas!.height || this.y < 0) {
+          this.directionY = -this.directionY;
+        }
+
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          if (distance < mouse.radius + this.size) {
+            const forceDirectionX = dx / distance;
+            const forceDirectionY = dy / distance;
+            const force = (mouse.radius - distance) / mouse.radius;
+            this.x -= forceDirectionX * force * 5;
+            this.y -= forceDirectionY * force * 5;
+          }
+        }
+
+        this.x += this.directionX;
+        this.y += this.directionY;
+        this.draw();
+      }
+    }
+
+    function init() {
+      particles = [];
+      const numberOfParticles = (canvas!.height * canvas!.width) / 9000;
+      for (let i = 0; i < numberOfParticles; i++) {
+        const size = Math.random() * 2 + 1;
+        const x = Math.random() * (innerWidth - size * 2) + size * 2;
+        const y = Math.random() * (innerHeight - size * 2) + size * 2;
+        const directionX = Math.random() * 0.4 - 0.2;
+        const directionY = Math.random() * 0.4 - 0.2;
+        const color = "rgba(99, 102, 241, 0.6)";
+        particles.push(new Particle(x, y, directionX, directionY, size, color));
+      }
+    }
+
+    const resizeCanvas = () => {
+      canvas!.width = window.innerWidth;
+      canvas!.height = window.innerHeight;
+      init();
+    };
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const connect = () => {
+      let opacityValue = 1;
+      for (let a = 0; a < particles.length; a++) {
+        for (let b = a; b < particles.length; b++) {
+          const distance =
+            (particles[a].x - particles[b].x) * (particles[a].x - particles[b].x) +
+            (particles[a].y - particles[b].y) * (particles[a].y - particles[b].y);
+
+          if (distance < (canvas!.width / 7) * (canvas!.height / 7)) {
+            opacityValue = 1 - distance / 20000;
+
+            if (mouse.x !== null && mouse.y !== null) {
+              const dx_mouse_a = particles[a].x - mouse.x;
+              const dy_mouse_a = particles[a].y - mouse.y;
+              const distance_mouse_a = Math.sqrt(dx_mouse_a * dx_mouse_a + dy_mouse_a * dy_mouse_a);
+
+              if (distance_mouse_a < mouse.radius) {
+                ctx!.strokeStyle = `rgba(255, 255, 255, ${opacityValue})`;
+              } else {
+                ctx!.strokeStyle = `rgba(99, 102, 241, ${opacityValue * 0.6})`;
+              }
+            } else {
+              ctx!.strokeStyle = `rgba(99, 102, 241, ${opacityValue * 0.6})`;
+            }
+
+            ctx!.lineWidth = 1;
+            ctx!.beginPath();
+            ctx!.moveTo(particles[a].x, particles[a].y);
+            ctx!.lineTo(particles[b].x, particles[b].y);
+            ctx!.stroke();
+          }
+        }
+      }
+    };
+
+    let frameCount = 0;
+    const animate = () => {
+      frameCount++;
+      animationFrameId = requestAnimationFrame(animate);
+      ctx!.fillStyle = "#0a0a0a";
+      ctx!.fillRect(0, 0, innerWidth, innerHeight);
+
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+      }
+      if (frameCount % 2 === 0) connect();
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      mouse.x = event.pageX;
+      mouse.y = event.pageY;
+    };
+
+    const handleMouseOut = () => {
+      mouse.x = null;
+      mouse.y = null;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseout", handleMouseOut);
+
+    init();
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseout", handleMouseOut);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  const fadeUpVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.15 + 0.3,
+        duration: 0.5,
+        ease: "easeInOut" as const,
+      },
+    }),
+  };
+
+  return (
+    <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden pt-16">
+      <motion.canvas
+        ref={canvasRef}
+        className="absolute top-0 left-0 w-full h-full"
+        style={{ opacity: canvasOpacity, scale: canvasScale }}
+      />
+
+      <div className="relative z-10 text-center p-6">
+        <motion.div
+          custom={0}
+          variants={fadeUpVariants}
+          initial="hidden"
+          animate="visible"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-accent/20 mb-6 backdrop-blur-sm bg-accent/10"
+        >
+          <PenLine className="h-4 w-4 text-accent" />
+          <span className="text-sm font-medium text-accent">
+            A personal blog
+          </span>
+        </motion.div>
+
+        <motion.h1
+          custom={1}
+          variants={fadeUpVariants}
+          initial="hidden"
+          animate="visible"
+          className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight mb-6 text-balance"
+        >
+          where thoughts<br />
+          <span className="text-accent">
+            take shape.
+          </span>
+        </motion.h1>
+
+        <motion.p
+          custom={2}
+          variants={fadeUpVariants}
+          initial="hidden"
+          animate="visible"
+          className="max-w-2xl mx-auto text-lg text-foreground/80 mb-10 text-balance"
+        >
+          A quiet corner of the internet where I write about technology, design,
+          and the things I&apos;m building along the way.
+        </motion.p>
+
+        <motion.div
+          custom={3}
+          variants={fadeUpVariants}
+          initial="hidden"
+          animate="visible"
+          className="flex items-center justify-center gap-4"
+        >
+          <Button href="/blog">
+            Read the blog
+          </Button>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+export default AetherFlowHero;

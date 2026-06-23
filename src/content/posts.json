@@ -1,0 +1,13 @@
+[
+  {
+    "slug": "hello-world",
+    "title": "Hello World",
+    "excerpt": "Welcome to my blog. This is where I'll share my thoughts, projects, and ideas.",
+    "date": "2026-06-22",
+    "content": "# Hello World\n\nWelcome to my personal blog. This is my first post.\n\nI'll be writing about:\n\n- **Technology** – things I'm building and learning\n- **Design** – thoughts on UI, UX, and visual craft\n- **Life** – musings and reflections\n\nStay tuned for more content coming soon.",
+    "tags": [
+      "tech"
+    ],
+    "published": true
+  }
+]

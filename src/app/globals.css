@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+/*
+ * Z-index scale (systemic layers):
+ *   10   — sticky nav backgrounds, section pseudo-elements
+ *   40   — interactive overlays (dropdowns, popovers)
+ *   50   — Nav (fixed top bar)
+ *   55   — FilmGrain (ambient texture overlay)
+ *   60   — ScrollProgress (fixed progress bar)
+ *   70   — Modals, dialogs
+ *   90   — Toasts
+ */
+
+@theme inline {
+  --color-background: #0a0a0a;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-muted-foreground: #71717a;
+  --color-surface: #141416;
+  --color-surface-elevated: #1c1c1f;
+  --color-border: #27272a;
+  --color-accent: #6366f1;
+  --color-accent-hover: #818cf8;
+  --color-accent-muted: rgba(99, 102, 241, 0.15);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-ink: #fafafa;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.text-pretty {
+  text-wrap: pretty;
+}
+
+@keyframes ambient-glow {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(var(--gx1, 15px), var(--gy1, -10px)) scale(var(--gs1, 1.06));
+  }
+  66% {
+    transform: translate(var(--gx2, -10px), var(--gy2, 12px)) scale(var(--gs2, 0.94));
+  }
+}
+
+.animate-ambient-glow {
+  animation: ambient-glow var(--gdur, 22s) ease-in-out infinite;
+  animation-delay: var(--gdel, 0s);
+}
+
+@keyframes particle-float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(var(--p-x1, 12px), var(--p-y1, -8px)) rotate(90deg);
+  }
+  50% {
+    transform: translate(var(--p-x2, -8px), var(--p-y2, 10px)) rotate(180deg);
+  }
+  75% {
+    transform: translate(var(--p-x3, 6px), var(--p-y3, -12px)) rotate(270deg);
+  }
+}
+
+.particle-float {
+  animation: particle-float var(--p-dur, 24s) ease-in-out infinite;
+  animation-delay: var(--p-del, 0s);
+}
+
+.bg-dot-accent {
+  background-image: radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.08) 1px, transparent 0);
+  background-size: 32px 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
