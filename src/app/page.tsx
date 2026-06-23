@@ -5,6 +5,8 @@ import { AboutMe } from "@/components/sections/AboutMe";
 import { Connect } from "@/components/sections/Connect";
 import { FilmGrain } from "@/components/ui/FilmGrain";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <>
