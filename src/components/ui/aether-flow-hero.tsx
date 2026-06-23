@@ -87,10 +87,14 @@ const AetherFlowHero = () => {
       }
     }
 
+    let resizeTimer: ReturnType<typeof setTimeout>;
     const resizeCanvas = () => {
-      canvas!.width = window.innerWidth;
-      canvas!.height = window.innerHeight;
-      init();
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        canvas!.width = window.innerWidth;
+        canvas!.height = window.innerHeight;
+        init();
+      }, 150);
     };
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
@@ -130,9 +134,7 @@ const AetherFlowHero = () => {
       }
     };
 
-    let frameCount = 0;
     const animate = () => {
-      frameCount++;
       animationFrameId = requestAnimationFrame(animate);
       ctx!.fillStyle = "#0a0a0a";
       ctx!.fillRect(0, 0, innerWidth, innerHeight);
@@ -140,7 +142,7 @@ const AetherFlowHero = () => {
       for (let i = 0; i < particles.length; i++) {
         particles[i].update();
       }
-      if (frameCount % 2 === 0) connect();
+      connect();
     };
 
     const handleMouseMove = (event: MouseEvent) => {
@@ -160,6 +162,7 @@ const AetherFlowHero = () => {
     animate();
 
     return () => {
+      clearTimeout(resizeTimer);
       window.removeEventListener("resize", resizeCanvas);
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseout", handleMouseOut);
@@ -184,7 +187,7 @@ const AetherFlowHero = () => {
     <div className="relative min-h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden pt-16">
       <motion.canvas
         ref={canvasRef}
-        className="absolute top-0 left-0 w-full h-full"
+        className="absolute top-0 left-0 w-full h-full bg-[#0a0a0a]"
         style={{ opacity: canvasOpacity, scale: canvasScale }}
       />
 
