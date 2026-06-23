@@ -1,5 +1,5 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { getDb, ensureSchema } from "./db";
+import type { InValue } from "@libsql/client";
 
 export interface Post {
   slug: string;
@@ -14,8 +14,6 @@ export interface Post {
 
 export const ALL_TAGS = ["physics", "mathematics", "life", "tech", "silly thoughts", "gaming"] as const;
 
-const DATA_FILE = path.join(process.cwd(), "src/content/posts.json");
-
 const DEFAULT_POSTS: Post[] = [
   {
     slug: "hello-world",
@@ -28,34 +26,81 @@ const DEFAULT_POSTS: Post[] = [
   },
 ];
 
+function rowToPost(row: Record<string, unknown>): Post {
+  return {
+    slug: row.slug as string,
+    title: row.title as string,
+    excerpt: row.excerpt as string,
+    date: row.date as string,
+    content: row.content as string,
+    tags: JSON.parse((row.tags as string) || "[]"),
+    published: (row.published as number) === 1,
+    image: (row.image as string) || undefined,
+  };
+}
+
+function postToRow(post: Post): Record<string, InValue> {
+  return {
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt,
+    date: post.date,
+    content: post.content,
+    tags: JSON.stringify(post.tags),
+    published: post.published ? 1 : 0,
+    image: post.image || null,
+  };
+}
+
 export async function getPosts(): Promise<Post[]> {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    const posts: Post[] = JSON.parse(data);
-    return posts.filter((p) => p.published).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  } catch {
-    await savePosts(DEFAULT_POSTS);
-    return DEFAULT_POSTS.filter((p) => p.published);
+  await ensureSchema();
+  const db = getDb();
+  const result = await db.execute("SELECT * FROM posts WHERE published = 1 ORDER BY date DESC");
+  if (result.rows.length === 0) {
+    const all = await db.execute("SELECT COUNT(*) as cnt FROM posts");
+    if (Number(all.rows[0].cnt) === 0) {
+      await savePosts(DEFAULT_POSTS);
+      return DEFAULT_POSTS.filter((p) => p.published);
+    }
   }
+  return result.rows.map(rowToPost);
 }
 
 export async function getPost(slug: string): Promise<Post | null> {
-  const posts = await getAllPosts();
-  return posts.find((p) => p.slug === slug) ?? null;
+  await ensureSchema();
+  const db = getDb();
+  const result = await db.execute({ sql: "SELECT * FROM posts WHERE slug = ?", args: [slug] });
+  if (result.rows.length === 0) return null;
+  return rowToPost(result.rows[0]);
 }
 
 export async function getAllPosts(): Promise<Post[]> {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data).sort((a: Post, b: Post) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  } catch {
+  await ensureSchema();
+  const db = getDb();
+  const result = await db.execute("SELECT * FROM posts ORDER BY date DESC");
+  if (result.rows.length === 0) {
     await savePosts(DEFAULT_POSTS);
     return DEFAULT_POSTS;
   }
+  return result.rows.map(rowToPost);
 }
 
 export async function savePosts(posts: Post[]): Promise<void> {
-  const dir = path.dirname(DATA_FILE);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(posts, null, 2), "utf-8");
+  await ensureSchema();
+  const db = getDb();
+  const tx = await db.transaction("write");
+  try {
+    await tx.execute("DELETE FROM posts");
+    for (const post of posts) {
+      const row = postToRow(post);
+      await tx.execute({
+        sql: `INSERT INTO posts (slug, title, excerpt, date, content, tags, published, image) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [row.slug, row.title, row.excerpt, row.date, row.content, row.tags, row.published, row.image] as InValue[],
+      });
+    }
+    await tx.commit();
+  } catch (e) {
+    await tx.rollback();
+    throw e;
+  }
 }

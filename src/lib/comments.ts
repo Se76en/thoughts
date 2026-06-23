@@ -1,5 +1,4 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { getDb, ensureSchema } from "./db";
 
 export interface Comment {
   id: string;
@@ -11,35 +10,44 @@ export interface Comment {
   isAdmin?: boolean;
 }
 
-const DATA_FILE = path.join(process.cwd(), "src/content/comments.json");
+function rowToComment(row: Record<string, unknown>): Comment {
+  return {
+    id: row.id as string,
+    postSlug: row.postSlug as string,
+    parentId: (row.parentId as string) || null,
+    author: row.author as string,
+    content: row.content as string,
+    date: row.date as string,
+    isAdmin: (row.isAdmin as number) === 1,
+  };
+}
 
 export async function getComments(postSlug: string): Promise<Comment[]> {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    const all: Comment[] = JSON.parse(data);
-    return all.filter((c) => c.postSlug === postSlug);
-  } catch {
-    return [];
-  }
+  await ensureSchema();
+  const db = getDb();
+  const result = await db.execute({ sql: "SELECT * FROM comments WHERE postSlug = ? ORDER BY date", args: [postSlug] });
+  return result.rows.map(rowToComment);
 }
 
 export async function addComment(comment: Comment): Promise<void> {
-  let all: Comment[] = [];
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    all = JSON.parse(data);
-  } catch {
-    all = [];
-  }
-  all.push(comment);
-  const dir = path.dirname(DATA_FILE);
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(all, null, 2), "utf-8");
+  await ensureSchema();
+  const db = getDb();
+  await db.execute({
+    sql: `INSERT INTO comments (id, postSlug, parentId, author, content, date, isAdmin) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      comment.id,
+      comment.postSlug,
+      comment.parentId || null,
+      comment.author,
+      comment.content,
+      comment.date,
+      comment.isAdmin ? 1 : 0,
+    ],
+  });
 }
 
 export async function deleteComment(id: string): Promise<void> {
-  const data = await fs.readFile(DATA_FILE, "utf-8");
-  const all: Comment[] = JSON.parse(data);
-  const filtered = all.filter((c) => c.id !== id);
-  await fs.writeFile(DATA_FILE, JSON.stringify(filtered, null, 2), "utf-8");
+  await ensureSchema();
+  const db = getDb();
+  await db.execute({ sql: "DELETE FROM comments WHERE id = ?", args: [id] });
 }
