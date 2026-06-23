@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useScroll } from "motion/react";
 
 export function Donut() {
   const preRef = useRef<HTMLPreElement>(null);
-  const { scrollY } = useScroll();
 
   useEffect(() => {
     const pre = preRef.current;
@@ -22,15 +20,8 @@ export function Donut() {
     let A = 0;
     let B = 0;
     let id: number;
-    let lastScrollY = scrollY.get();
 
     const render = () => {
-      const currentScrollY = scrollY.get();
-      const dy = currentScrollY - lastScrollY;
-      lastScrollY = currentScrollY;
-      A += dy * 0.003;
-      B += dy * 0.0015;
-
       A += 0.018;
       B += 0.009;
 
@@ -78,7 +69,7 @@ export function Donut() {
     return () => {
       cancelAnimationFrame(id);
     };
-  }, [scrollY]);
+  }, []);
 
   return (
     <pre

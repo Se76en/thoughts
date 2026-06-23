@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useReducedMotion } from "motion/react";
 
 interface ParticleData {
@@ -38,9 +38,14 @@ function generate(count: number): ParticleData[] {
 
 export function FloatingParticles({ count = 18 }: { count?: number }) {
   const reduce = useReducedMotion();
-  const particles = useMemo(() => generate(count), [count]);
+  const [particles, setParticles] = useState<ParticleData[]>([]);
+
+  useEffect(() => {
+    setParticles(generate(count));
+  }, [count]);
 
   if (reduce) return null;
+  if (particles.length === 0) return null;
 
   return (
     <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
